@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Animated CRUD Cards 💫</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(120deg, #a6c0fe, #f68084);
+      margin: 0;
+      padding: 40px;
+      color: #333;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #fff;
+      letter-spacing: 1px;
+    }
+
+    .container {
+      max-width: 950px;
+      margin: auto;
+      background: #fff;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      animation: fadeIn 0.8s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .input-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      transition: all 0.3s;
+      font-size: 14px;
+    }
+
+    input:focus {
+      border-color: #5a67d8;
+      box-shadow: 0 0 6px #b2a8ff;
+      outline: none;
+    }
+
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .add-btn {
+      background: #6c63ff;
+      color: #fff;
+    }
+
+    .add-btn:hover {
+      background: #5548c8;
+    }
+
+    .search-bar {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .search-bar input {
+      width: 300px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+    }
+
+    .card {
+      background: #f9f9ff;
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+      position: relative;
+      transition: transform 0.2s, box-shadow 0.3s;
+      animation: popIn 0.4s ease;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+    }
+
+    .avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #eee;
+      margin-bottom: 10px;
+    }
+
+    .favorite {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      cursor: pointer;
+      font-size: 22px;
+      transition: 0.3s;
+    }
+
+    .favorite.active {
+      color: red;
+      transform: scale(1.1);
+    }
+
+    .card h4 { margin: 8px 0 4px; }
+    .card p { margin: 0; font-size: 14px; color: #666; }
+
+    .actions {
+      margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .edit-btn {
+      background: #00b894;
+      color: #fff;
+    }
+    .delete-btn {
+      background: #d63031;
+      color: #fff;
+    }
+
+    .section-title {
+      margin-top: 25px;
+      font-weight: bold;
+      color: #444;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+  <h2>💼 Animated CRUD Cards with Favorites</h2>
+
+  <div class="container">
+    <div class="input-group">
+      <input type="text" id="name" placeholder="Enter Name 😎">
+      <input type="email" id="email" placeholder="Enter Email 📧">
+      <button class="add-btn" onclick="addOrUpdateUser()">Add</button>
+    </div>
+
+    <div class="search-bar">
+      <input type="text" id="search" placeholder="🔍 Search name or email">
+    </div>
+
+    <div class="section-title">⭐ Favorites</div>
+    <div class="cards" id="favCards"></div>
+
+    <div class="section-title">👥 All Users</div>
+    <div class="cards" id="userCards"></div>
+  </div>
+
+  <script>
+    let users = JSON.parse(localStorage.getItem("users")) || [];
+    let editIndex = -1;
+
+    const saveData = () => localStorage.setItem("users", JSON.stringify(users));
+
+    const getAvatar = (name) =>
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+
+    const renderCards = (filter = "") => {
+      const favContainer = document.getElementById("favCards");
+      const userContainer = document.getElementById("userCards");
+      favContainer.innerHTML = "";
+      userContainer.innerHTML = "";
+
+      const filtered = users.filter(
+        (u) =>
+          u.name.toLowerCase().includes(filter.toLowerCase()) ||
+          u.email.toLowerCase().includes(filter.toLowerCase())
+      );
+
+      const favorites = filtered.filter((u) => u.favorite);
+      const others = filtered.filter((u) => !u.favorite);
+
+      const render = (arr, container) => {
+        arr.forEach((user) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <span class="favorite ${user.favorite ? "active" : ""}" onclick="toggleFavorite(${user.id})">❤️</span>
+            <img src="${getAvatar(user.name)}" class="avatar" alt="Avatar">
+            <h4>${user.name}</h4>
+            <p>${user.email}</p>
+            <div class="actions">
+              <button class="edit-btn" onclick="editUser(${user.id})">✏️</button>
+              <button class="delete-btn" onclick="deleteUser(${user.id})">🗑️</button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      };
+
+      render(favorites, favContainer);
+      render(others, userContainer);
+    };
+
+    const addOrUpdateUser = () => {
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      if (!name || !email) return alert("⚠️ Fill out all fields!");
+
+      // Duplicate check
+      const duplicate = users.some(
+        (u, i) =>
+          (u.name.toLowerCase() === name.toLowerCase() || u.email.toLowerCase() === email.toLowerCase()) &&
+          i !== editIndex
+      );
+      if (duplicate) return alert("🚫 Duplicate name or email!");
+
+      if (editIndex === -1) {
+        users.push({ id: Date.now(), name, email, favorite: false });
+      } else {
+        users[editIndex].name = name;
+        users[editIndex].email = email;
+        editIndex = -1;
+        document.querySelector(".add-btn").textContent = "Add";
+      }
+
+      saveData();
+      renderCards();
+      document.getElementById("name").value = "";
+      document.getElementById("email").value = "";
+    };
+
+    const editUser = (id) => {
+      const user = users.find((u) => u.id === id);
+      document.getElementById("name").value = user.name;
+      document.getElementById("email").value = user.email;
+      editIndex = users.findIndex((u) => u.id === id);
+      document.querySelector(".add-btn").textContent = "Update";
+    };
+
+    const deleteUser = (id) => {
+      users = users.filter((u) => u.id !== id);
+      saveData();
+      renderCards(document.getElementById("search").value);
+    };
+
+    const toggleFavorite = (id) => {
+      const user = users.find((u) => u.id === id);
+      user.favorite = !user.favorite;
+      saveData();
+      renderCards(document.getElementById("search").value);
+    };
+
+    document.getElementById("search").addEventListener("input", (e) => {
+      renderCards(e.target.value);
+    });
+
+    renderCards();
+  </script>
+</body>
+</html>
